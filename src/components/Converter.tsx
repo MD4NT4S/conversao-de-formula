@@ -74,63 +74,62 @@ export const Converter: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto p-6">
+        <div className="flex flex-col gap-12 w-full mx-auto">
 
-            {/* Header */}
-            <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-blue-600 rounded-lg shadow-lg shadow-blue-500/20">
-                    <Calculator className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                        Excel para Álgebra
-                    </h1>
-                    <p className="text-gray-400 text-sm">Transforme suas planilhas em equações profissionais.</p>
-                </div>
+            {/* Header Minimalista */}
+            <div className="text-center space-y-4">
+                <h1 className="text-5xl md:text-6xl font-serif text-gray-900 tracking-tight">
+                    Formula Convert.
+                </h1>
+                <p className="text-gray-500 text-lg max-w-xl mx-auto font-light">
+                    Simplifique suas planilhas. Converta lógica do Excel em notação matemática elegante.
+                </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Left Column: Input & Settings */}
-                <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+                {/* Left Column: Inputs */}
+                <div className="space-y-8">
 
-                    {/* Input Box */}
-                    <div className="bg-gray-800/50 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 shadow-xl">
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                            Fórmula do Excel
+                    {/* Input Box Clean */}
+                    <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-900 uppercase tracking-wider">
+                            Fórmula Original
                         </label>
-                        <textarea
-                            value={formula}
-                            onChange={(e) => setFormula(e.target.value)}
-                            className="w-full h-32 bg-gray-900/50 border border-gray-700 rounded-xl p-4 text-white font-mono text-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
-                            placeholder="Ex: =A1^2 + 2*A1 - 4"
-                        />
+                        <div className="relative group">
+                            <textarea
+                                value={formula}
+                                onChange={(e) => setFormula(e.target.value)}
+                                className="w-full h-40 bg-gray-50 border border-gray-200 rounded-none p-6 text-gray-800 font-mono text-lg focus:ring-0 focus:border-gray-900 outline-none transition-all resize-none placeholder:text-gray-300"
+                                placeholder="=SQRT(A1^2 + B1^2)"
+                            />
+                            <div className="absolute bottom-4 right-4 pointer-events-none">
+                                <Calculator className="w-5 h-5 text-gray-300" />
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Variable Mapping */}
+                    {/* Variable Mapping Clean */}
                     {detectedVariables.length > 0 && (
-                        <div className="bg-gray-800/50 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 shadow-xl">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
-                                    <RefreshCw className="w-4 h-4" /> Mapear Variáveis
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                                    <RefreshCw className="w-4 h-4" /> Variáveis
                                 </h3>
-                                <span className="text-xs text-gray-500 bg-gray-900 px-2 py-1 rounded">
-                                    {detectedVariables.length} encontradas
-                                </span>
                             </div>
 
-                            <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="grid grid-cols-1 gap-4">
                                 {detectedVariables.map((v) => (
-                                    <div key={v} className="flex items-center gap-3 group">
-                                        <div className="w-16 h-10 flex items-center justify-center bg-gray-900/80 rounded-lg border border-gray-700 font-mono text-sm text-blue-400">
+                                    <div key={v} className="flex items-center gap-4 group hover:bg-gray-50 p-2 transition-colors -mx-2 rounded">
+                                        <div className="w-16 h-10 flex items-center justify-center bg-white border border-gray-200 font-mono text-sm text-gray-600 shadow-sm">
                                             {v}
                                         </div>
-                                        <span className="text-gray-500">→</span>
+                                        <span className="text-gray-300 font-light">→</span>
                                         <input
                                             type="text"
                                             value={mappings[v] || ''}
                                             onChange={(e) => handleMappingChange(v, e.target.value)}
-                                            className="flex-1 bg-gray-900/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
-                                            placeholder={`Substituto para ${v}`}
+                                            className="flex-1 bg-transparent border-b border-gray-200 py-2 text-gray-900 focus:border-gray-900 outline-none transition-all placeholder:text-gray-300 placeholder:italic"
+                                            placeholder="Ex: x, \\alpha"
                                         />
                                     </div>
                                 ))}
@@ -140,33 +139,35 @@ export const Converter: React.FC = () => {
                 </div>
 
                 {/* Right Column: Preview */}
-                <div className="flex flex-col h-full">
-                    <div className="bg-gray-800/50 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 shadow-xl flex-1 flex flex-col">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-semibold text-white">Resultado Algébrico</h2>
+                <div className="lg:pl-8 lg:border-l border-gray-100 h-full flex flex-col justify-center">
+                    <div className="sticky top-12 space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
+                                Visualização
+                            </h2>
                             <button
                                 onClick={copyToClipboard}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors text-sm font-medium shadow-lg shadow-blue-500/20 active:scale-95 transform"
+                                className="flex items-center gap-2 px-6 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-full transition-all text-sm font-medium active:scale-95 shadow-lg shadow-gray-200"
                             >
                                 <Copy className="w-4 h-4" />
-                                Copiar LaTeX
+                                Copiar
                             </button>
                         </div>
 
-                        {/* LaTeX Render Container */}
-                        <div className="flex-1 flex items-center justify-center bg-white rounded-xl p-8 min-h-[200px] overflow-auto shadow-inner relative group cursor-pointer transition-colors"
+                        {/* LaTeX Render Container Clean */}
+                        <div
+                            className="bg-white border-none min-h-[300px] flex items-center justify-center p-8 cursor-pointer hover:bg-gray-50 transition-colors rounded-3xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)]"
                             onClick={copyToClipboard}
-                            title="Clique para copiar">
-                            <div id="latex-preview" className="text-xl sm:text-2xl text-gray-900 select-all"></div>
-
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-gray-400 pointer-events-none">
-                                Previsão (KaTeX)
-                            </div>
+                            title="Clique para copiar"
+                        >
+                            <div id="latex-preview" className="text-2xl sm:text-4xl text-gray-900 select-all font-serif"></div>
                         </div>
 
-                        {/* Raw Code Preview (Optional, helpful for debugging or manual copy) */}
-                        <div className="mt-4 p-3 bg-gray-900 rounded-lg border border-gray-700">
-                            <code className="text-xs text-gray-400 font-mono break-all">{latexOutput || '...'}</code>
+                        {/* Raw Code Clean */}
+                        <div className="text-center">
+                            <code className="text-xs text-gray-400 font-mono selection:bg-gray-200 p-2 rounded cursor-pointer hover:text-gray-600 transition-colors" onClick={copyToClipboard}>
+                                {latexOutput || 'Aguardando fórmula...'}
+                            </code>
                         </div>
                     </div>
                 </div>
