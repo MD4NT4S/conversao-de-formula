@@ -163,7 +163,8 @@ export const Converter: React.FC = () => {
                         {/* KaTeX Renderer - Explicit White override */}
                         <div
                             id="latex-preview"
-                            className="text-4xl md:text-5xl text-white font-serif z-10 [&_.katex]:!text-white [&_.katex-html]:!text-white [&_span]:!text-white overflow-x-auto max-w-full"
+                            className="text-4xl md:text-5xl font-serif z-10 overflow-x-auto max-w-full flex justify-center py-4"
+                            style={{ color: 'white' }}
                         ></div>
 
                         {!formula && <span className="text-gray-600 font-mono">O resultado aparecerá aqui...</span>}
