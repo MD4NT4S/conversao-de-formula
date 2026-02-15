@@ -76,39 +76,36 @@ export const Converter: React.FC = () => {
         navigator.clipboard.writeText(latexOutput);
     };
 
-    // --- OCR Logic ---
+    // Use useCallback to keep function references stable or update effect deps
     const processImage = async (file: File) => {
+        console.log("Starting OCR processing for file:", file.name, file.type, file.size);
         setIsOcrLoading(true);
         try {
             const worker = await createWorker('eng');
 
-            // Allow some special chars?
             await worker.setParameters({
                 tessedit_char_whitelist: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,+-=()*^/_√±×÷− ',
             });
 
             const ret = await worker.recognize(file);
-            console.log(ret.data);
+            console.log("OCR Result:", ret.data);
 
             let finalText = '';
             const data = ret.data as any;
 
             if (data.paragraphs) {
+                // ... (Existing flattening logic) ...
                 data.paragraphs.forEach((p: any) => {
                     if (p.lines) {
                         p.lines.forEach((l: any) => {
-                            // Process each line independently to correctly detect sub/super scripts relative to THAT line
                             let lineText = '';
                             let prevSymbol: any = null;
-
-                            // Flatten symbols for this line
                             const lineSymbols: any[] = [];
                             if (l.words) {
                                 l.words.forEach((w: any) => {
                                     if (w.symbols) {
                                         w.symbols.forEach((s: any) => lineSymbols.push(s));
                                     }
-                                    // Add space between words
                                     lineSymbols.push({ text: ' ', isSpace: true });
                                 });
                             }
@@ -122,42 +119,31 @@ export const Converter: React.FC = () => {
                                 }
 
                                 if (prevSymbol) {
-                                    // BBox: x0, y0 (top), x1, y1 (bottom)
-                                    // Y increases downwards
                                     const prevHeight = prevSymbol.bbox.y1 - prevSymbol.bbox.y0;
                                     const currHeight = s.bbox.y1 - s.bbox.y0;
                                     const prevCenterY = (prevSymbol.bbox.y0 + prevSymbol.bbox.y1) / 2;
                                     const currCenterY = (s.bbox.y0 + s.bbox.y1) / 2;
-
-                                    const verticalShift = currCenterY - prevCenterY; // +ve means lower (sub), -ve means higher (super)
+                                    const verticalShift = currCenterY - prevCenterY;
                                     const sizeRatio = currHeight / prevHeight;
 
-                                    // Thresholds (Heuristic)
                                     const isSmall = sizeRatio < 0.85;
                                     const significantShift = Math.abs(verticalShift) > (prevHeight * 0.15);
 
                                     if (isSmall && significantShift) {
-                                        if (verticalShift > 0) {
-                                            // Subscript
-                                            lineText += '_';
-                                        } else {
-                                            // Superscript
-                                            lineText += '^';
-                                        }
+                                        if (verticalShift > 0) lineText += '_';
+                                        else lineText += '^';
                                     }
                                 }
 
-                                // Symbol Mapping
                                 let char = s.text;
-                                if (char === '√') char = 'SQRT('; // Basic replacement, missing closing paren
+                                if (char === '√') char = 'SQRT(';
                                 if (char === '×') char = '*';
                                 if (char === '÷') char = '/';
-                                if (char === '−') char = '-'; // Unicode minus
-                                if (char === '±') char = '+'; // Approximation
+                                if (char === '−') char = '-';
+                                if (char === '±') char = '+-';
 
                                 lineText += char;
 
-                                // Reset context if special char or operator, to avoid chaining subscripts incorrectly
                                 if (['+', '-', '*', '/', '=', '(', ')', '^', '_', ' '].includes(char)) {
                                     prevSymbol = null;
                                 } else {
@@ -170,22 +156,20 @@ export const Converter: React.FC = () => {
                 });
             }
 
-            // Post-processing sanitization
-            // Try to close SQRT if we opened it? Hard to guess.
-            // Just basic cleanup.
             const sanitized = finalText
                 .replace(/\n/g, ' ')
                 .replace(/\s+/g, ' ')
                 .replace(/_ /g, '_')
                 .replace(/\^ /g, '^')
-                .replace(/SQRT\(\s+/g, 'SQRT(') // Remove space after SQRT
+                .replace(/SQRT\(\s+/g, 'SQRT(')
                 .trim();
 
+            console.log("Final Formula:", sanitized);
             setFormula(sanitized);
             await worker.terminate();
         } catch (err) {
             console.error('OCR Error:', err);
-            alert('Não foi possível ler o texto da imagem. Tente uma imagem mais clara.');
+            alert('Erro ao ler imagem: ' + (err as Error).message);
         } finally {
             setIsOcrLoading(false);
         }
@@ -200,24 +184,24 @@ export const Converter: React.FC = () => {
     };
 
     const handlePaste = (e: ClipboardEvent | React.ClipboardEvent) => {
-        // Handle image paste
-        // Check for files (e.g. copied from explorer)
-        if (e.clipboardData?.files?.length) {
-            const file = e.clipboardData.files[0];
-            if (file.type.startsWith('image/')) {
-                e.preventDefault();
-                processImage(file);
-                return;
-            }
+        console.log("Paste detected!", e);
+        const clipboardData = (e as ClipboardEvent).clipboardData || (e as React.ClipboardEvent).clipboardData;
+
+        if (!clipboardData) {
+            console.log("No clipboard data");
+            return;
         }
 
-        // Check for items (e.g. screenshot or right-click copy image)
-        if (e.clipboardData?.items) {
-            for (let i = 0; i < e.clipboardData.items.length; i++) {
-                const item = e.clipboardData.items[i];
-                if (item.type.startsWith('image/')) {
+        // Check for items (Standard for screenshots)
+        if (clipboardData.items) {
+            console.log("Clipboard items:", clipboardData.items.length);
+            for (let i = 0; i < clipboardData.items.length; i++) {
+                const item = clipboardData.items[i];
+                console.log("Item:", item.kind, item.type);
+                if (item.type.indexOf('image') !== -1) {
                     const file = item.getAsFile();
                     if (file) {
+                        console.log("Image file extracted form item", file);
                         e.preventDefault();
                         processImage(file);
                         return;
@@ -225,14 +209,27 @@ export const Converter: React.FC = () => {
                 }
             }
         }
+
+        // Fallback for files
+        if (clipboardData.files && clipboardData.files.length > 0) {
+            console.log("Clipboard files:", clipboardData.files.length);
+            const file = clipboardData.files[0];
+            if (file.type.indexOf('image') !== -1) {
+                console.log("Image file found in files", file);
+                e.preventDefault();
+                processImage(file);
+                return;
+            }
+        }
     };
 
-    // Add global paste listener
+    // Add global paste listener with proper dependency management
     useEffect(() => {
-        const onPaste = (e: ClipboardEvent) => handlePaste(e);
-        window.addEventListener('paste', onPaste);
-        return () => window.removeEventListener('paste', onPaste);
-    }, []);
+        const listener = (e: ClipboardEvent) => handlePaste(e);
+        window.addEventListener('paste', listener);
+        return () => window.removeEventListener('paste', listener);
+    }); // No deps array -> updates on every render. Ensures latest closures.
+
 
     return (
         <div className="w-full max-w-4xl mx-auto flex flex-col gap-16 px-6 py-12">
