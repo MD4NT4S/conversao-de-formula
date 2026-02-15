@@ -208,7 +208,12 @@ export const Converter: React.FC = () => {
                 .trim();
 
             console.log("Final Formula:", sanitized);
-            setFormula(sanitized);
+
+            if (sanitized.length === 0) {
+                alert("Não foi possível identificar texto na imagem. Tente uma imagem com melhor qualidade/contraste.");
+            } else {
+                setFormula(sanitized);
+            }
         } catch (err) {
             console.error('OCR Error:', err);
             alert('Erro ao ler imagem: ' + (err as Error).message);
