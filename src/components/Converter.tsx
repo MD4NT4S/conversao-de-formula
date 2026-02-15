@@ -81,12 +81,96 @@ export const Converter: React.FC = () => {
         setIsOcrLoading(true);
         try {
             const worker = await createWorker('eng');
-            const ret = await worker.recognize(file);
-            const text = ret.data.text;
+            // Allow simplified chinese for better symbol recognition? No, keep english for now.
+            // Maybe whitelist chars? No, formulas are complex.
 
-            // Basic sanitization for formulas
-            // Replace newlines with spaces, remove excessive whitespace
-            const sanitized = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+            const ret = await worker.recognize(file);
+            console.log(ret.data); // Debug
+
+            let finalText = '';
+            let prevSymbol: any = null;
+
+            // Iterate over all symbols to reconstruction text with subscripts
+            // Tesseract structure: Block -> Paragraph -> Line -> Word -> Symbol
+            // We can flatten this
+            const symbols: any[] = [];
+            const data = ret.data as any; // Cast to any to avoid TS errors with paragraphs/lines
+
+            if (data.paragraphs) {
+                data.paragraphs.forEach((p: any) => {
+                    if (p.lines) {
+                        p.lines.forEach((l: any) => {
+                            if (l.words) {
+                                l.words.forEach((w: any) => {
+                                    if (w.symbols) {
+                                        w.symbols.forEach((s: any) => {
+                                            symbols.push(s);
+                                        });
+                                    }
+                                    // Add space after word if it's not the last word in line
+                                    symbols.push({ text: ' ', isSpace: true });
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+
+            for (let i = 0; i < symbols.length; i++) {
+                const s = symbols[i];
+                if (s.isSpace) {
+                    finalText += ' ';
+                    prevSymbol = null; // Reset context on space
+                    continue;
+                }
+
+                if (prevSymbol) {
+                    // Heuristic for subscript:
+                    // 1. Current top is below previous center? 
+                    // 2. Current center is significantly below previous center?
+                    // 3. Current height is smaller?
+
+                    const prevCenterY = (prevSymbol.bbox.y0 + prevSymbol.bbox.y1) / 2;
+                    const currCenterY = (s.bbox.y0 + s.bbox.y1) / 2;
+                    const prevHeight = prevSymbol.bbox.y1 - prevSymbol.bbox.y0;
+                    const currHeight = s.bbox.y1 - s.bbox.y0;
+
+                    // Metrics
+                    const verticalDrop = currCenterY - prevCenterY;
+                    const sizeRatio = currHeight / prevHeight;
+
+                    // Validation:
+                    // If vertical drop is positive (lower) and significant (e.g. > 20% of prev height)
+                    // AND size is somewhat smaller (e.g. < 90%)
+                    // AND characters are close horizontally (not a new line) - handled by flattened stream?
+                    // Tesseract usually separates lines. We are in a stream.
+
+                    const isSubscript = (verticalDrop > prevHeight * 0.15) && (sizeRatio < 0.85);
+
+                    if (isSubscript) {
+                        finalText += '_';
+                        // Validation to avoid double subscripts like N__c if logic fails?
+                        // No, just one _ per symbol transition
+                    }
+                }
+
+                finalText += s.text;
+                if (!['_', '^'].includes(s.text)) {
+                    prevSymbol = s;
+                } else {
+                    prevSymbol = null; // Reset context if operator
+                }
+            }
+
+            // Post-processing sanitization
+            // convert 'σ' to 'sigma', etc if needed? No, let's stick to characters.
+            // Convert common misreads?
+            // Space cleanup
+            const sanitized = finalText
+                .replace(/\n/g, ' ')
+                .replace(/\s+/g, ' ')
+                .replace(/_ /g, '_') // Remove space after subscript
+                .trim();
 
             setFormula(sanitized);
             await worker.terminate();
