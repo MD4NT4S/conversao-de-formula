@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Upload, Loader2, FileImage } from 'lucide-react';
+import { Upload, Loader2 } from 'lucide-react';
 import katex from 'katex';
-import { createWorker, Worker } from 'tesseract.js';
+import { createWorker, type Worker } from 'tesseract.js';
 import { convertFormulaToLatex, tokenize } from '../utils/engine';
 
 export const Converter: React.FC = () => {
