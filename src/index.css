@@ -4,13 +4,15 @@
 
 @import 'katex/dist/katex.min.css';
 
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light;
-  color: #1a1a1a;
+  color: #191A23;
   background-color: #ffffff;
 
   font-synthesis: none;

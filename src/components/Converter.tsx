@@ -74,102 +74,129 @@ export const Converter: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col gap-12 w-full mx-auto">
+        <div className="flex flex-col gap-12 w-full mx-auto max-w-6xl px-4 md:px-8">
 
-            {/* Header Minimalista */}
-            <div className="text-center space-y-4">
-                <h1 className="text-5xl md:text-6xl font-serif text-gray-900 tracking-tight">
-                    Formula Convert.
-                </h1>
-                <p className="text-gray-500 text-lg max-w-xl mx-auto font-light">
-                    Simplifique suas planilhas. Converta lógica do Excel em notação matemática elegante.
-                </p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-                {/* Left Column: Inputs */}
-                <div className="space-y-8">
-
-                    {/* Input Box Clean */}
-                    <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-900 uppercase tracking-wider">
-                            Fórmula Original
-                        </label>
-                        <div className="relative group">
-                            <textarea
-                                value={formula}
-                                onChange={(e) => setFormula(e.target.value)}
-                                className="w-full h-40 bg-gray-50 border border-gray-200 rounded-none p-6 text-gray-800 font-mono text-lg focus:ring-0 focus:border-gray-900 outline-none transition-all resize-none placeholder:text-gray-300"
-                                placeholder="=SQRT(A1^2 + B1^2)"
-                            />
-                            <div className="absolute bottom-4 right-4 pointer-events-none">
-                                <Calculator className="w-5 h-5 text-gray-300" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Variable Mapping Clean */}
-                    {detectedVariables.length > 0 && (
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider flex items-center gap-2">
-                                    <RefreshCw className="w-4 h-4" /> Variáveis
-                                </h3>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-4">
-                                {detectedVariables.map((v) => (
-                                    <div key={v} className="flex items-center gap-4 group hover:bg-gray-50 p-2 transition-colors -mx-2 rounded">
-                                        <div className="w-16 h-10 flex items-center justify-center bg-white border border-gray-200 font-mono text-sm text-gray-600 shadow-sm">
-                                            {v}
-                                        </div>
-                                        <span className="text-gray-300 font-light">→</span>
-                                        <input
-                                            type="text"
-                                            value={mappings[v] || ''}
-                                            onChange={(e) => handleMappingChange(v, e.target.value)}
-                                            className="flex-1 bg-transparent border-b border-gray-200 py-2 text-gray-900 focus:border-gray-900 outline-none transition-all placeholder:text-gray-300 placeholder:italic"
-                                            placeholder="Ex: x, \\alpha"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+            {/* Header / Hero Section - Positivus Style */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
+                <div className="space-y-4 max-w-2xl">
+                    <h1 className="text-5xl md:text-7xl font-bold text-[#191A23] leading-tight">
+                        Excel to <br />
+                        <span className="bg-[#B9FF66] px-2 rounded-lg inline-block transform -rotate-1">Algebra</span>
+                    </h1>
+                    <p className="text-[#191A23] text-lg md:text-xl font-normal max-w-lg">
+                        Transforme planilhas complexas em equações matemáticas elegantes. Simples, rápido e visual.
+                    </p>
                 </div>
 
-                {/* Right Column: Preview */}
-                <div className="lg:pl-8 lg:border-l border-gray-100 h-full flex flex-col justify-center">
-                    <div className="sticky top-12 space-y-6">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
-                                Visualização
-                            </h2>
-                            <button
-                                onClick={copyToClipboard}
-                                className="flex items-center gap-2 px-6 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-full transition-all text-sm font-medium active:scale-95 shadow-lg shadow-gray-200"
-                            >
-                                <Copy className="w-4 h-4" />
-                                Copiar
-                            </button>
-                        </div>
+                {/* CTA / Action Button Style */}
+                <button
+                    onClick={() => window.open('https://github.com/MD4NT4S/conversao-de-formula', '_blank')}
+                    className="bg-[#191A23] text-white px-8 py-4 rounded-[14px] text-lg font-medium hover:bg-gray-800 transition-colors border border-black shadow-[5px_5px_0px_0px_#B9FF66] active:shadow-none active:translate-x-[5px] active:translate-y-[5px] transition-all"
+                >
+                    Ver no GitHub
+                </button>
+            </div>
 
-                        {/* LaTeX Render Container Clean */}
-                        <div
-                            className="bg-white border-none min-h-[300px] flex items-center justify-center p-8 cursor-pointer hover:bg-gray-50 transition-colors rounded-3xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)]"
+            {/* Main Grid: Neo-Brutalist Cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                {/* LEFT CARD: INPUT (Light Gray Theme) */}
+                <div className="bg-[#F3F3F3] border border-black rounded-[45px] p-8 md:p-10 shadow-[8px_8px_0px_0px_#191A23] flex flex-col gap-6 relative overflow-hidden">
+                    {/* Decorative Circle */}
+                    <div className="absolute top-[-20px] left-[-20px] w-20 h-20 bg-[#B9FF66] rounded-full blur-[40px] opacity-50" />
+
+                    <div className="flex items-center gap-3">
+                        <span className="bg-[#B9FF66] px-2 py-1 text-xl font-bold border border-black rounded shadow-[2px_2px_0px_0px_#000]">Input</span>
+                        <h2 className="text-2xl font-bold">Fórmula Excel</h2>
+                    </div>
+
+                    <div className="space-y-4 flex-1">
+                        <textarea
+                            value={formula}
+                            onChange={(e) => setFormula(e.target.value)}
+                            className="w-full h-48 bg-white border border-black rounded-[20px] p-6 text-[#191A23] font-mono text-lg focus:outline-none focus:ring-2 focus:ring-[#B9FF66] focus:border-black transition-all resize-none shadow-[4px_4px_0px_0px_#E0E0E0]"
+                            placeholder="Cole sua fórmula aqui...&#10;Ex: =SQRT(A1^2 + B1^2)"
+                        />
+
+                        {/* Variables Section */}
+                        {detectedVariables.length > 0 && (
+                            <div className="mt-6 bg-white border border-black rounded-[20px] p-6 shadow-[4px_4px_0px_0px_#E0E0E0]">
+                                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                    <RefreshCw className="w-5 h-5" /> Variáveis Detectadas
+                                </h3>
+                                <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {detectedVariables.map((v) => (
+                                        <div key={v} className="flex items-center gap-3">
+                                            <div className="bg-[#191A23] text-white px-3 py-1 rounded-md font-mono text-sm border border-black">
+                                                {v}
+                                            </div>
+                                            <span className="text-gray-400">→</span>
+                                            <input
+                                                type="text"
+                                                value={mappings[v] || ''}
+                                                onChange={(e) => handleMappingChange(v, e.target.value)}
+                                                className="flex-1 bg-[#F3F3F3] border-b-2 border-gray-300 focus:border-[#B9FF66] outline-none px-2 py-1 transition-colors font-medium"
+                                                placeholder="Símbolo (Ex: x)"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* RIGHT CARD: OUTPUT (Dark Theme) */}
+                <div className="bg-[#191A23] border border-black rounded-[45px] p-8 md:p-10 shadow-[8px_8px_0px_0px_#191A23] flex flex-col gap-6 text-white relative">
+                    {/* Decorative Elements */}
+                    <div className="absolute top-10 right-10">
+                        <Calculator className="w-12 h-12 text-[#B9FF66] opacity-20 transform rotate-12" />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <span className="bg-white text-black px-2 py-1 text-xl font-bold border border-black rounded shadow-[2px_2px_0px_0px_#B9FF66]">Output</span>
+                            <h2 className="text-2xl font-bold text-[#B9FF66]">Resultado</h2>
+                        </div>
+                        <button
                             onClick={copyToClipboard}
-                            title="Clique para copiar"
+                            className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 hover:bg-white/10 transition-colors text-sm font-medium"
                         >
-                            <div id="latex-preview" className="text-2xl sm:text-4xl text-gray-900 select-all font-serif"></div>
-                        </div>
+                            <Copy className="w-4 h-4" /> Copiar
+                        </button>
+                    </div>
 
-                        {/* Raw Code Clean */}
-                        <div className="text-center">
-                            <code className="text-xs text-gray-400 font-mono selection:bg-gray-200 p-2 rounded cursor-pointer hover:text-gray-600 transition-colors" onClick={copyToClipboard}>
-                                {latexOutput || 'Aguardando fórmula...'}
-                            </code>
+                    {/* Preview Area - "Terminal" Style */}
+                    <div
+                        className="flex-1 bg-[#2C2D35] border border-gray-700 rounded-[30px] p-8 flex items-center justify-center min-h-[300px] relative cursor-pointer hover:border-[#B9FF66] transition-colors group"
+                        onClick={copyToClipboard}
+                    >
+                        <div id="latex-preview" className="text-2xl sm:text-4xl text-white select-all font-serif z-10"></div>
+
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-10 transition-opacity">
+                            <div className="bg-[#B9FF66] text-black px-4 py-2 rounded-full font-bold text-sm shadow-lg pointer-events-none transform translate-y-12 group-hover:translate-y-0 transition-transform">
+                                Clique para Copiar
+                            </div>
                         </div>
                     </div>
+
+                    {/* Code Snippet */}
+                    <div className="bg-black/30 rounded-xl p-4 border border-white/10">
+                        <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">Código LaTeX</p>
+                        <code className="text-sm font-mono text-[#B9FF66] break-all">
+                            {latexOutput || '...'}
+                        </code>
+                    </div>
+                </div>
+
+            </div>
+
+            {/* Footer Style */}
+            <div className="mt-12 flex justify-between items-center border-t-2 border-black pt-8">
+                <div className="flex gap-4">
+                    {['Amazon', 'Dribbble', 'HubSpot', 'Notion', 'Netflix', 'Zoom'].map((brand) => (
+                        <span key={brand} className="text-gray-400 font-bold text-lg grayscale hover:grayscale-0 transition-all cursor-default">{brand}</span>
+                    ))}
                 </div>
             </div>
         </div>
