@@ -199,16 +199,40 @@ export const Converter: React.FC = () => {
         }
     };
 
-    const handlePaste = (e: React.ClipboardEvent) => {
+    const handlePaste = (e: ClipboardEvent | React.ClipboardEvent) => {
         // Handle image paste
-        if (e.clipboardData.files?.[0]) {
-            e.preventDefault();
+        // Check for files (e.g. copied from explorer)
+        if (e.clipboardData?.files?.length) {
             const file = e.clipboardData.files[0];
             if (file.type.startsWith('image/')) {
+                e.preventDefault();
                 processImage(file);
+                return;
+            }
+        }
+
+        // Check for items (e.g. screenshot or right-click copy image)
+        if (e.clipboardData?.items) {
+            for (let i = 0; i < e.clipboardData.items.length; i++) {
+                const item = e.clipboardData.items[i];
+                if (item.type.startsWith('image/')) {
+                    const file = item.getAsFile();
+                    if (file) {
+                        e.preventDefault();
+                        processImage(file);
+                        return;
+                    }
+                }
             }
         }
     };
+
+    // Add global paste listener
+    useEffect(() => {
+        const onPaste = (e: ClipboardEvent) => handlePaste(e);
+        window.addEventListener('paste', onPaste);
+        return () => window.removeEventListener('paste', onPaste);
+    }, []);
 
     return (
         <div className="w-full max-w-4xl mx-auto flex flex-col gap-16 px-6 py-12">
@@ -279,7 +303,6 @@ export const Converter: React.FC = () => {
                         <textarea
                             value={formula}
                             onChange={(e) => setFormula(e.target.value)}
-                            onPaste={handlePaste}
                             className="w-full h-40 bg-[#F4F4F5] border-3 border-black rounded-xl p-4 text-xl font-mono text-black placeholder:text-gray-400 focus:outline-none focus:ring-4 focus:ring-[#FF9F1C] transition-all resize-none mb-8"
                             placeholder="=SQRT(A1^2 + B1^2) ou Cole uma imagem (Ctrl+V)"
                         />
