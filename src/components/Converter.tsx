@@ -117,6 +117,53 @@ export const Converter: React.FC = () => {
         navigator.clipboard.writeText(latexOutput);
     };
 
+    // --- Image Pre-processing ---
+    const preprocessImage = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                if (!ctx) {
+                    reject(new Error("Could not get canvas context"));
+                    return;
+                }
+
+                // Scale up if image is too small (e.g. < 1000px width) for better OCR
+                // But limit max size to avoid performance issues
+                let width = img.width;
+                let height = img.height;
+                const minWidth = 1000;
+
+                if (width < minWidth) {
+                    const scale = minWidth / width;
+                    width = Math.round(width * scale);
+                    height = Math.round(height * scale);
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                // 1. Fill with WHITE background (handles transparent PNGs)
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, width, height);
+
+                // 2. Draw image
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // 3. Enhance Contrast (Simple Binarization Threshold) - Optional but helps
+                // Getting image data is expensive, maybe skip for now and see if white bg is enough.
+                // Tesseract does internal binarization usually. 
+                // The white background is the most critical fix for "empty result" on transparent pngs.
+
+                resolve(canvas.toDataURL('image/jpeg', 1.0));
+            };
+            img.onerror = (e) => reject(e);
+            img.src = URL.createObjectURL(file);
+        });
+    };
+
     // --- OCR Logic ---
     const processImage = async (file: File) => {
         if (isOcrLoading) return;
@@ -128,10 +175,14 @@ export const Converter: React.FC = () => {
         console.log("Starting OCR processing for file:", file.name, file.type, file.size);
         setIsOcrLoading(true);
         setOcrProgress(0);
-        setOcrStatus("Iniciando...");
+        setOcrStatus("Processando imagem...");
 
         try {
-            const ret = await workerRef.current.recognize(file);
+            // Pre-process image to ensure white background and good scale
+            const processedImageCus = await preprocessImage(file);
+
+            setOcrStatus("Lendo texto...");
+            const ret = await workerRef.current.recognize(processedImageCus);
             console.log("OCR Result:", ret.data);
 
             let finalText = '';
