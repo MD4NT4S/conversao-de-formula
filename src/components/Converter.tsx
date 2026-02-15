@@ -80,7 +80,7 @@ export const Converter: React.FC = () => {
             <header className="text-center space-y-6">
                 <h1 className="text-5xl md:text-7xl font-black text-black tracking-tighter uppercase leading-none">
                     Excel to <br />
-                    <span className="text-[#B9FF66] bg-black px-4 rounded-lg inline-block transform -rotate-2 mt-2">
+                    <span className="text-[#FF9F1C] bg-black px-4 rounded-lg inline-block transform -rotate-2 mt-2">
                         Algebra
                     </span>
                 </h1>
@@ -105,14 +105,14 @@ export const Converter: React.FC = () => {
                 {/* STEP 1: INPUT */}
                 <section className="bg-white border-4 border-black rounded-3xl p-8 shadow-[12px_12px_0_0_#000]">
                     <h2 className="text-2xl font-black uppercase mb-6 flex items-center gap-3">
-                        <span className="bg-[#B9FF66] w-10 h-10 flex items-center justify-center rounded-lg border-3 border-black text-xl">1</span>
+                        <span className="bg-[#FF9F1C] w-10 h-10 flex items-center justify-center rounded-lg border-3 border-black text-xl">1</span>
                         Cole sua Fórmula
                     </h2>
 
                     <textarea
                         value={formula}
                         onChange={(e) => setFormula(e.target.value)}
-                        className="w-full h-40 bg-[#F4F4F5] border-3 border-black rounded-xl p-4 text-xl font-mono text-black placeholder:text-gray-400 focus:outline-none focus:ring-4 focus:ring-[#B9FF66] transition-all resize-none mb-8"
+                        className="w-full h-40 bg-[#F4F4F5] border-3 border-black rounded-xl p-4 text-xl font-mono text-black placeholder:text-gray-400 focus:outline-none focus:ring-4 focus:ring-[#FF9F1C] transition-all resize-none mb-8"
                         placeholder="=SQRT(A1^2 + B1^2)"
                     />
 
@@ -123,7 +123,7 @@ export const Converter: React.FC = () => {
                             <div className="flex flex-wrap gap-4">
                                 {detectedVariables.map((v) => (
                                     <div key={v} className="flex bg-white border-3 border-black rounded-lg shadow-[4px_4px_0_0_rgba(0,0,0,0.1)]">
-                                        <div className="px-4 py-2 bg-black text-[#B9FF66] font-bold font-mono border-r-3 border-black flex items-center">
+                                        <div className="px-4 py-2 bg-black text-[#FF9F1C] font-bold font-mono border-r-3 border-black flex items-center">
                                             {v}
                                         </div>
                                         <input
@@ -142,7 +142,7 @@ export const Converter: React.FC = () => {
 
                 {/* Arrow */}
                 <div className="flex justify-center -my-6 z-10">
-                    <div className="bg-[#B9FF66] border-4 border-black p-3 rounded-full shadow-[4px_4px_0_0_#000]">
+                    <div className="bg-[#FF9F1C] border-4 border-black p-3 rounded-full shadow-[4px_4px_0_0_#000]">
                         <svg className="w-8 h-8 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                         </svg>
@@ -150,14 +150,14 @@ export const Converter: React.FC = () => {
                 </div>
 
                 {/* STEP 2: RESULT */}
-                <section className="bg-black border-4 border-black rounded-3xl p-8 shadow-[12px_12px_0_0_#B9FF66]">
+                <section className="bg-black border-4 border-black rounded-3xl p-8 shadow-[12px_12px_0_0_#FF9F1C]">
                     <h2 className="text-2xl font-black uppercase mb-6 flex items-center gap-3 text-white">
-                        <span className="bg-[#B9FF66] text-black w-10 h-10 flex items-center justify-center rounded-lg border-3 border-white text-xl">2</span>
+                        <span className="bg-[#FF9F1C] text-black w-10 h-10 flex items-center justify-center rounded-lg border-3 border-white text-xl">2</span>
                         Resultado
                     </h2>
 
                     <div
-                        className="w-full bg-[#1A1A1A] rounded-2xl min-h-[240px] flex flex-col items-center justify-center p-8 border-3 border-[#333] hover:border-[#B9FF66] transition-colors relative group cursor-pointer"
+                        className="w-full bg-[#1A1A1A] rounded-2xl min-h-[240px] flex flex-col items-center justify-center p-8 border-3 border-[#333] hover:border-[#FF9F1C] transition-colors relative group cursor-pointer"
                         onClick={copyToClipboard}
                     >
                         {/* KaTeX Renderer - Explicit White override */}
@@ -170,7 +170,7 @@ export const Converter: React.FC = () => {
                         {!formula && <span className="text-gray-600 font-mono">O resultado aparecerá aqui...</span>}
 
                         <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="bg-[#B9FF66] text-black text-xs font-bold px-3 py-1 rounded">COPIAR</span>
+                            <span className="bg-[#FF9F1C] text-black text-xs font-bold px-3 py-1 rounded">COPIAR</span>
                         </div>
                     </div>
 
