@@ -1,12 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Copy, RefreshCw, Calculator } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Upload, Loader2 } from 'lucide-react';
 import katex from 'katex';
+import { createWorker } from 'tesseract.js';
 import { convertFormulaToLatex, tokenize } from '../utils/engine';
 
 export const Converter: React.FC = () => {
     const [formula, setFormula] = useState<string>('=3*A1 + 5');
     const [mappings, setMappings] = useState<Record<string, string>>({});
     const [latexOutput, setLatexOutput] = useState<string>('');
+    const [isOcrLoading, setIsOcrLoading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Detectar variaveis automaticamente
     const detectedVariables = useMemo(() => {
@@ -73,6 +76,47 @@ export const Converter: React.FC = () => {
         navigator.clipboard.writeText(latexOutput);
     };
 
+    // --- OCR Logic ---
+    const processImage = async (file: File) => {
+        setIsOcrLoading(true);
+        try {
+            const worker = await createWorker('eng');
+            const ret = await worker.recognize(file);
+            const text = ret.data.text;
+
+            // Basic sanitization for formulas
+            // Replace newlines with spaces, remove excessive whitespace
+            const sanitized = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+
+            setFormula(sanitized);
+            await worker.terminate();
+        } catch (err) {
+            console.error('OCR Error:', err);
+            alert('Não foi possível ler o texto da imagem. Tente uma imagem mais clara.');
+        } finally {
+            setIsOcrLoading(false);
+        }
+    };
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files?.[0]) {
+            processImage(e.target.files[0]);
+            // Reset input so same file can be selected again if needed
+            e.target.value = '';
+        }
+    };
+
+    const handlePaste = (e: React.ClipboardEvent) => {
+        // Handle image paste
+        if (e.clipboardData.files?.[0]) {
+            e.preventDefault();
+            const file = e.clipboardData.files[0];
+            if (file.type.startsWith('image/')) {
+                processImage(file);
+            }
+        }
+    };
+
     return (
         <div className="w-full max-w-4xl mx-auto flex flex-col gap-16 px-6 py-12">
 
@@ -104,17 +148,49 @@ export const Converter: React.FC = () => {
 
                 {/* STEP 1: INPUT */}
                 <section className="bg-white border-4 border-black rounded-3xl p-8 shadow-[12px_12px_0_0_#000]">
-                    <h2 className="text-2xl font-black uppercase mb-6 flex items-center gap-3">
-                        <span className="bg-[#FF9F1C] w-10 h-10 flex items-center justify-center rounded-lg border-3 border-black text-xl">1</span>
-                        Cole sua Fórmula
-                    </h2>
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-black uppercase flex items-center gap-3">
+                            <span className="bg-[#FF9F1C] w-10 h-10 flex items-center justify-center rounded-lg border-3 border-black text-xl">1</span>
+                            Sua Fórmula
+                        </h2>
 
-                    <textarea
-                        value={formula}
-                        onChange={(e) => setFormula(e.target.value)}
-                        className="w-full h-40 bg-[#F4F4F5] border-3 border-black rounded-xl p-4 text-xl font-mono text-black placeholder:text-gray-400 focus:outline-none focus:ring-4 focus:ring-[#FF9F1C] transition-all resize-none mb-8"
-                        placeholder="=SQRT(A1^2 + B1^2)"
-                    />
+                        <div className="flex gap-2">
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                className="hidden"
+                                accept="image/*"
+                                onChange={handleFileUpload}
+                            />
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isOcrLoading}
+                                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 border-2 border-black rounded-lg font-bold text-sm transition-colors disabled:opacity-50"
+                                title="Enviar imagem com fórmula"
+                            >
+                                {isOcrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                                {isOcrLoading ? 'Lendo...' : 'Imagem'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="relative">
+                        {isOcrLoading && (
+                            <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center rounded-xl backdrop-blur-sm">
+                                <div className="flex flex-col items-center gap-2">
+                                    <Loader2 className="w-8 h-8 animate-spin text-[#FF9F1C]" />
+                                    <span className="font-bold text-black">Processando Imagem...</span>
+                                </div>
+                            </div>
+                        )}
+                        <textarea
+                            value={formula}
+                            onChange={(e) => setFormula(e.target.value)}
+                            onPaste={handlePaste}
+                            className="w-full h-40 bg-[#F4F4F5] border-3 border-black rounded-xl p-4 text-xl font-mono text-black placeholder:text-gray-400 focus:outline-none focus:ring-4 focus:ring-[#FF9F1C] transition-all resize-none mb-8"
+                            placeholder="=SQRT(A1^2 + B1^2) ou Cole uma imagem (Ctrl+V)"
+                        />
+                    </div>
 
                     {/* Variables */}
                     {detectedVariables.length > 0 && (
