@@ -81,95 +81,104 @@ export const Converter: React.FC = () => {
         setIsOcrLoading(true);
         try {
             const worker = await createWorker('eng');
-            // Allow simplified chinese for better symbol recognition? No, keep english for now.
-            // Maybe whitelist chars? No, formulas are complex.
+
+            // Allow some special chars?
+            await worker.setParameters({
+                tessedit_char_whitelist: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,+-=()*^/_√±×÷− ',
+            });
 
             const ret = await worker.recognize(file);
-            console.log(ret.data); // Debug
+            console.log(ret.data);
 
             let finalText = '';
-            let prevSymbol: any = null;
-
-            // Iterate over all symbols to reconstruction text with subscripts
-            // Tesseract structure: Block -> Paragraph -> Line -> Word -> Symbol
-            // We can flatten this
-            const symbols: any[] = [];
-            const data = ret.data as any; // Cast to any to avoid TS errors with paragraphs/lines
+            const data = ret.data as any;
 
             if (data.paragraphs) {
                 data.paragraphs.forEach((p: any) => {
                     if (p.lines) {
                         p.lines.forEach((l: any) => {
+                            // Process each line independently to correctly detect sub/super scripts relative to THAT line
+                            let lineText = '';
+                            let prevSymbol: any = null;
+
+                            // Flatten symbols for this line
+                            const lineSymbols: any[] = [];
                             if (l.words) {
                                 l.words.forEach((w: any) => {
                                     if (w.symbols) {
-                                        w.symbols.forEach((s: any) => {
-                                            symbols.push(s);
-                                        });
+                                        w.symbols.forEach((s: any) => lineSymbols.push(s));
                                     }
-                                    // Add space after word if it's not the last word in line
-                                    symbols.push({ text: ' ', isSpace: true });
+                                    // Add space between words
+                                    lineSymbols.push({ text: ' ', isSpace: true });
                                 });
                             }
+
+                            for (let i = 0; i < lineSymbols.length; i++) {
+                                const s = lineSymbols[i];
+                                if (s.isSpace) {
+                                    lineText += ' ';
+                                    prevSymbol = null;
+                                    continue;
+                                }
+
+                                if (prevSymbol) {
+                                    // BBox: x0, y0 (top), x1, y1 (bottom)
+                                    // Y increases downwards
+                                    const prevHeight = prevSymbol.bbox.y1 - prevSymbol.bbox.y0;
+                                    const currHeight = s.bbox.y1 - s.bbox.y0;
+                                    const prevCenterY = (prevSymbol.bbox.y0 + prevSymbol.bbox.y1) / 2;
+                                    const currCenterY = (s.bbox.y0 + s.bbox.y1) / 2;
+
+                                    const verticalShift = currCenterY - prevCenterY; // +ve means lower (sub), -ve means higher (super)
+                                    const sizeRatio = currHeight / prevHeight;
+
+                                    // Thresholds (Heuristic)
+                                    const isSmall = sizeRatio < 0.85;
+                                    const significantShift = Math.abs(verticalShift) > (prevHeight * 0.15);
+
+                                    if (isSmall && significantShift) {
+                                        if (verticalShift > 0) {
+                                            // Subscript
+                                            lineText += '_';
+                                        } else {
+                                            // Superscript
+                                            lineText += '^';
+                                        }
+                                    }
+                                }
+
+                                // Symbol Mapping
+                                let char = s.text;
+                                if (char === '√') char = 'SQRT('; // Basic replacement, missing closing paren
+                                if (char === '×') char = '*';
+                                if (char === '÷') char = '/';
+                                if (char === '−') char = '-'; // Unicode minus
+                                if (char === '±') char = '+'; // Approximation
+
+                                lineText += char;
+
+                                // Reset context if special char or operator, to avoid chaining subscripts incorrectly
+                                if (['+', '-', '*', '/', '=', '(', ')', '^', '_', ' '].includes(char)) {
+                                    prevSymbol = null;
+                                } else {
+                                    prevSymbol = s;
+                                }
+                            }
+                            finalText += lineText + '\n';
                         });
                     }
                 });
             }
 
-            for (let i = 0; i < symbols.length; i++) {
-                const s = symbols[i];
-                if (s.isSpace) {
-                    finalText += ' ';
-                    prevSymbol = null; // Reset context on space
-                    continue;
-                }
-
-                if (prevSymbol) {
-                    // Heuristic for subscript:
-                    // 1. Current top is below previous center? 
-                    // 2. Current center is significantly below previous center?
-                    // 3. Current height is smaller?
-
-                    const prevCenterY = (prevSymbol.bbox.y0 + prevSymbol.bbox.y1) / 2;
-                    const currCenterY = (s.bbox.y0 + s.bbox.y1) / 2;
-                    const prevHeight = prevSymbol.bbox.y1 - prevSymbol.bbox.y0;
-                    const currHeight = s.bbox.y1 - s.bbox.y0;
-
-                    // Metrics
-                    const verticalDrop = currCenterY - prevCenterY;
-                    const sizeRatio = currHeight / prevHeight;
-
-                    // Validation:
-                    // If vertical drop is positive (lower) and significant (e.g. > 20% of prev height)
-                    // AND size is somewhat smaller (e.g. < 90%)
-                    // AND characters are close horizontally (not a new line) - handled by flattened stream?
-                    // Tesseract usually separates lines. We are in a stream.
-
-                    const isSubscript = (verticalDrop > prevHeight * 0.15) && (sizeRatio < 0.85);
-
-                    if (isSubscript) {
-                        finalText += '_';
-                        // Validation to avoid double subscripts like N__c if logic fails?
-                        // No, just one _ per symbol transition
-                    }
-                }
-
-                finalText += s.text;
-                if (!['_', '^'].includes(s.text)) {
-                    prevSymbol = s;
-                } else {
-                    prevSymbol = null; // Reset context if operator
-                }
-            }
-
             // Post-processing sanitization
-            // convert 'σ' to 'sigma', etc if needed? No, let's stick to characters.
-            // Convert common misreads?
-            // Space cleanup
+            // Try to close SQRT if we opened it? Hard to guess.
+            // Just basic cleanup.
             const sanitized = finalText
                 .replace(/\n/g, ' ')
                 .replace(/\s+/g, ' ')
-                .replace(/_ /g, '_') // Remove space after subscript
+                .replace(/_ /g, '_')
+                .replace(/\^ /g, '^')
+                .replace(/SQRT\(\s+/g, 'SQRT(') // Remove space after SQRT
                 .trim();
 
             setFormula(sanitized);
