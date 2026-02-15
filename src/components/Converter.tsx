@@ -1,15 +1,56 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Upload, Loader2 } from 'lucide-react';
+import { Upload, Loader2, FileImage } from 'lucide-react';
 import katex from 'katex';
-import { createWorker } from 'tesseract.js';
+import { createWorker, Worker } from 'tesseract.js';
 import { convertFormulaToLatex, tokenize } from '../utils/engine';
 
 export const Converter: React.FC = () => {
     const [formula, setFormula] = useState<string>('=3*A1 + 5');
     const [mappings, setMappings] = useState<Record<string, string>>({});
     const [latexOutput, setLatexOutput] = useState<string>('');
+
+    // OCR States
     const [isOcrLoading, setIsOcrLoading] = useState(false);
+    const [ocrProgress, setOcrProgress] = useState(0);
+    const [ocrStatus, setOcrStatus] = useState<string>('');
+
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const workerRef = useRef<Worker | null>(null);
+
+    // Initialize Tesseract Worker once
+    useEffect(() => {
+        const initWorker = async () => {
+            try {
+                const worker = await createWorker('eng', 1, {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            setOcrProgress(m.progress);
+                            setOcrStatus(`Lendo Texto... ${Math.round(m.progress * 100)}%`);
+                        } else {
+                            setOcrStatus(m.status);
+                        }
+                    }
+                });
+
+                await worker.setParameters({
+                    tessedit_char_whitelist: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,+-=()*^/_√±×÷− ',
+                });
+
+                workerRef.current = worker;
+                console.log("Tesseract Worker Initialized");
+            } catch (err) {
+                console.error("Failed to init Tesseract:", err);
+            }
+        };
+
+        initWorker();
+
+        return () => {
+            if (workerRef.current) {
+                workerRef.current.terminate();
+            }
+        };
+    }, []);
 
     // Detectar variaveis automaticamente
     const detectedVariables = useMemo(() => {
@@ -76,25 +117,27 @@ export const Converter: React.FC = () => {
         navigator.clipboard.writeText(latexOutput);
     };
 
-    // Use useCallback to keep function references stable or update effect deps
+    // --- OCR Logic ---
     const processImage = async (file: File) => {
+        if (isOcrLoading) return;
+        if (!workerRef.current) {
+            alert("O sistema de OCR ainda está iniciando. Aguarde um momento e tente novamente.");
+            return;
+        }
+
         console.log("Starting OCR processing for file:", file.name, file.type, file.size);
         setIsOcrLoading(true);
+        setOcrProgress(0);
+        setOcrStatus("Iniciando...");
+
         try {
-            const worker = await createWorker('eng');
-
-            await worker.setParameters({
-                tessedit_char_whitelist: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,+-=()*^/_√±×÷− ',
-            });
-
-            const ret = await worker.recognize(file);
+            const ret = await workerRef.current.recognize(file);
             console.log("OCR Result:", ret.data);
 
             let finalText = '';
             const data = ret.data as any;
 
             if (data.paragraphs) {
-                // ... (Existing flattening logic) ...
                 data.paragraphs.forEach((p: any) => {
                     if (p.lines) {
                         p.lines.forEach((l: any) => {
@@ -166,43 +209,36 @@ export const Converter: React.FC = () => {
 
             console.log("Final Formula:", sanitized);
             setFormula(sanitized);
-            await worker.terminate();
         } catch (err) {
             console.error('OCR Error:', err);
             alert('Erro ao ler imagem: ' + (err as Error).message);
         } finally {
             setIsOcrLoading(false);
+            setOcrStatus("");
         }
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files?.[0]) {
             processImage(e.target.files[0]);
-            // Reset input so same file can be selected again if needed
             e.target.value = '';
         }
     };
 
     const handlePaste = (e: ClipboardEvent | React.ClipboardEvent) => {
-        console.log("Paste detected!", e);
         const clipboardData = (e as ClipboardEvent).clipboardData || (e as React.ClipboardEvent).clipboardData;
 
-        if (!clipboardData) {
-            console.log("No clipboard data");
-            return;
-        }
+        if (!clipboardData) return;
 
         // Check for items (Standard for screenshots)
         if (clipboardData.items) {
-            console.log("Clipboard items:", clipboardData.items.length);
             for (let i = 0; i < clipboardData.items.length; i++) {
                 const item = clipboardData.items[i];
-                console.log("Item:", item.kind, item.type);
                 if (item.type.indexOf('image') !== -1) {
                     const file = item.getAsFile();
                     if (file) {
-                        console.log("Image file extracted form item", file);
                         e.preventDefault();
+                        console.log("Paste: Image item detected");
                         processImage(file);
                         return;
                     }
@@ -212,24 +248,23 @@ export const Converter: React.FC = () => {
 
         // Fallback for files
         if (clipboardData.files && clipboardData.files.length > 0) {
-            console.log("Clipboard files:", clipboardData.files.length);
             const file = clipboardData.files[0];
             if (file.type.indexOf('image') !== -1) {
-                console.log("Image file found in files", file);
                 e.preventDefault();
+                console.log("Paste: File detected");
                 processImage(file);
                 return;
             }
         }
     };
 
-    // Add global paste listener with proper dependency management
+    // Global paste listener using strict deps to ensure closure freshness if needed
+    // But since processImage depends on refs, it is stable.
     useEffect(() => {
         const listener = (e: ClipboardEvent) => handlePaste(e);
         window.addEventListener('paste', listener);
         return () => window.removeEventListener('paste', listener);
-    }); // No deps array -> updates on every render. Ensures latest closures.
-
+    }, [isOcrLoading]); // Re-bind if loading state changes to respect guard
 
     return (
         <div className="w-full max-w-4xl mx-auto flex flex-col gap-16 px-6 py-12">
@@ -283,18 +318,21 @@ export const Converter: React.FC = () => {
                                 title="Enviar imagem com fórmula"
                             >
                                 {isOcrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                                {isOcrLoading ? 'Lendo...' : 'Imagem'}
+                                {isOcrLoading ? 'Processando...' : 'Imagem'}
                             </button>
                         </div>
                     </div>
 
                     <div className="relative">
                         {isOcrLoading && (
-                            <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center rounded-xl backdrop-blur-sm">
-                                <div className="flex flex-col items-center gap-2">
-                                    <Loader2 className="w-8 h-8 animate-spin text-[#FF9F1C]" />
-                                    <span className="font-bold text-black">Processando Imagem...</span>
-                                </div>
+                            <div className="absolute inset-0 bg-white/90 z-20 flex flex-col items-center justify-center rounded-xl backdrop-blur-sm p-6 text-center">
+                                <Loader2 className="w-10 h-10 animate-spin text-[#FF9F1C] mb-4" />
+                                <span className="font-bold text-black text-lg mb-2">{ocrStatus || 'Carregando...'}</span>
+                                {ocrProgress > 0 && (
+                                    <div className="w-full max-w-xs bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-2">
+                                        <div className="bg-[#FF9F1C] h-2.5 rounded-full" style={{ width: `${ocrProgress * 100}%` }}></div>
+                                    </div>
+                                )}
                             </div>
                         )}
                         <textarea
