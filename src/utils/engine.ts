@@ -29,44 +29,88 @@ export function tokenize(formula: string): Token[] {
     while (current < formula.length) {
         let char = formula[current];
 
+        // Ignorar espaços
         if (/\s/.test(char)) {
             current++;
             continue;
         }
 
+        // Números (suporte a ponto e vírgula como decimal se necessário, mas focado em PT-BR: vírgula decimal)
         if (/[0-9]/.test(char)) {
             let value = '';
-            while (current < formula.length && /[0-9.]/.test(formula[current])) {
+            // Aceita dígitos e [.,] desde que seguidos de dígitos
+            while (current < formula.length && /[0-9.,]/.test(formula[current])) {
+                // Prevenir que ',' seja capturado se for separador de argumento (verificar lógica simples)
+                // Se for ',' e o próximo não for número, pare.
+                if (formula[current] === ',' || formula[current] === ';') {
+                    // Heurística rápida: Se estamos em contexto PT-BR, ';' é separador, ',' é decimal.
+                    // Assumiremos ',' como decimal se estiver entre números.
+                }
                 value += formula[current];
                 current++;
             }
+            // Ajuste fino: Se o número termina em ',' ou ';', devolve o caractere para o stream (backtrack)
+            // Mas no Regex acima pegamos tudo. Vamos simplificar:
+            // Pegar numeros com . ou ,
+
+            // Re-implementação segura para número
+            // Volta cursor
+            current -= value.length;
+            value = '';
+            while (current < formula.length) {
+                const c = formula[current];
+                if (/[0-9]/.test(c)) {
+                    value += c;
+                    current++;
+                } else if (c === ',' || c === '.') {
+                    // Só aceita separador decimal se tiver digito depois
+                    if (current + 1 < formula.length && /[0-9]/.test(formula[current + 1])) {
+                        value += c;
+                        current++;
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+
             tokens.push({ type: 'NUMBER', value });
             continue;
         }
 
+        // Identificadores (Funções ou Células)
+        // Inclui $ para poder remover depois
         if (/[a-zA-Z$]/.test(char)) {
             let value = '';
             while (current < formula.length && /[a-zA-Z0-9_$]/.test(formula[current])) {
                 value += formula[current];
                 current++;
             }
+
+            // Remover $ (Absolute references ignora-se)
+            const cleanValue = value.replace(/\$/g, '');
+
+            // Lookahead para ver se é função
             let lookahead = current;
             while (lookahead < formula.length && /\s/.test(formula[lookahead])) lookahead++;
 
             if (lookahead < formula.length && formula[lookahead] === '(') {
-                tokens.push({ type: 'FUNCTION', value: value.toUpperCase() });
+                tokens.push({ type: 'FUNCTION', value: cleanValue.toUpperCase() });
             } else {
-                tokens.push({ type: 'CELL_REF', value: value.toUpperCase() });
+                tokens.push({ type: 'CELL_REF', value: cleanValue.toUpperCase() });
             }
             continue;
         }
 
-        if (['+', '-', '*', '/', '^'].includes(char)) {
+        // Operadores
+        if (['+', '-', '*', '/', '^', '=', '<', '>'].includes(char)) {
             tokens.push({ type: 'OPERATOR', value: char });
             current++;
             continue;
         }
 
+        // Parênteses
         if (char === '(') {
             tokens.push({ type: 'PAREN_OPEN', value: '(' });
             current++;
@@ -79,6 +123,7 @@ export function tokenize(formula: string): Token[] {
             continue;
         }
 
+        // Separadores de argumento (; ou , fora de numeros)
         if (char === ',' || char === ';') {
             tokens.push({ type: 'COMMA', value: ',' });
             current++;
@@ -118,7 +163,19 @@ export class Parser {
         return false;
     }
 
+    // Expression: Handles comparison (=, <, >)
     public parseExpression(): ASTNode {
+        let left = this.parseAdditive();
+        while (this.peek() && ['=', '<', '>', '<=', '>=', '<>'].includes(this.peek()!.value)) {
+            const operator = this.advance().value;
+            const right = this.parseAdditive();
+            left = { type: 'BINARY_OP', operator, left, right };
+        }
+        return left;
+    }
+
+    // Additive: +, -
+    private parseAdditive(): ASTNode {
         let left = this.parseTerm();
         while (this.peek() && ['+', '-'].includes(this.peek()!.value)) {
             const operator = this.advance().value;
@@ -128,6 +185,7 @@ export class Parser {
         return left;
     }
 
+    // Term: *, /
     private parseTerm(): ASTNode {
         let left = this.parseFactor();
         while (this.peek() && ['*', '/'].includes(this.peek()!.value)) {
@@ -138,6 +196,7 @@ export class Parser {
         return left;
     }
 
+    // Factor: ^
     private parseFactor(): ASTNode {
         let left = this.parsePrimary();
         while (this.peek() && this.peek()!.value === '^') {
@@ -200,7 +259,7 @@ export class Parser {
 // --- Converter ---
 function astToLatex(node: ASTNode, mappings: Record<string, string>): string {
     switch (node.type) {
-        case 'NUMBER': return node.value;
+        case 'NUMBER': return node.value.replace('.', ','); // Output BR format? User used comma.
         case 'VARIABLE':
             return mappings[node.name] || mappings[node.name.toUpperCase()] || node.name;
         case 'BINARY_OP':
@@ -209,14 +268,42 @@ function astToLatex(node: ASTNode, mappings: Record<string, string>): string {
             if (node.operator === '/') return `\\frac{${left}}{${right}}`;
             if (node.operator === '*') return `${left} \\cdot ${right}`;
             if (node.operator === '^') return `{${left}}^{${right}}`;
+            // Handle comparison
+            if (node.operator === '=') return `${left} = ${right}`;
             return `${left} ${node.operator} ${right}`;
         case 'UNARY_OP':
             return `${node.operator}${astToLatex(node.right, mappings)}`;
         case 'FUNCTION_CALL':
             const args = node.args.map(arg => astToLatex(arg, mappings));
             const func = node.name.toUpperCase();
-            if (func === 'SQRT' || func === 'RAIZ') return `\\sqrt{${args[0] || ''}}`;
+
+            // Math Functions
+            if (['SQRT', 'RAIZ'].includes(func)) return `\\sqrt{${args[0] || ''}}`;
             if (['AVERAGE', 'MEDIA', 'MÉDIA'].includes(func)) return `\\overline{${args.join(', ') || 'x'}}`;
+            if (['ABS', 'ABS'].includes(func)) return `\\left| ${args[0]} \\right|`;
+            if (['SIN', 'SEN', 'SENO'].includes(func)) return `\\sin\\left(${args[0]}\\right)`;
+            if (['COS'].includes(func)) return `\\cos\\left(${args[0]}\\right)`;
+            if (['TAN'].includes(func)) return `\\tan\\left(${args[0]}\\right)`;
+
+            // Logic Functions
+            if (['SE', 'IF'].includes(func)) {
+                // \begin{cases} true & \text{se } cond \\ false & \text{caso contrário} \end{cases}
+                const condition = args[0] || '?';
+                const valTrue = args[1] || '?';
+                const valFalse = args[2];
+
+                if (valFalse) {
+                    return `\\begin{cases} ${valTrue} & \\text{se } ${condition} \\\\ ${valFalse} & \\text{caso contrário} \\end{cases}`;
+                } else {
+                    return `\\begin{cases} ${valTrue} & \\text{se } ${condition} \\end{cases}`;
+                }
+            }
+
+            // Ignored Functions (Transparent wrappers)
+            if (['ARRED', 'ROUND', 'ROUNDUP', 'ROUNDDOWN', 'RADIANOS', 'RADIANS'].includes(func)) {
+                return args[0] || '';
+            }
+
             return `\\text{${node.name}}(${args.join(', ')})`;
         case 'GROUP':
             return `\\left(${astToLatex(node.content, mappings)}\\right)`;
