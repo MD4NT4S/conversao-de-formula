@@ -74,107 +74,132 @@ export const Converter: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col gap-10 w-full max-w-3xl mx-auto px-4 py-8">
+        <div className="w-full max-w-4xl mx-auto flex flex-col gap-16">
 
-            {/* Header Centered */}
-            <div className="text-center space-y-6 flex flex-col items-center">
-                <h1 className="text-5xl md:text-7xl font-bold text-[#191A23] leading-tight tracking-tight">
+            {/* Header Section */}
+            <header className="text-center space-y-6">
+                <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-black uppercase leading-[0.9]">
                     Excel to <br />
-                    <span className="bg-[#B9FF66] px-4 py-1 rounded-[10px] inline-block transform -rotate-2 border-2 border-black shadow-[4px_4px_0px_0px_#000]">Algebra</span>
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#B9FF66] to-[#92cc4e] drop-shadow-[4px_4px_0_rgba(0,0,0,1)] stroke-black decoration-4" style={{ WebkitTextStroke: '2px black' }}>
+                        Algebra
+                    </span>
                 </h1>
-                <p className="text-[#191A23] text-lg font-medium max-w-md mx-auto">
-                    Converta planilhas em matemática pura.
+
+                <p className="text-xl md:text-2xl font-medium text-gray-600 max-w-2xl mx-auto">
+                    Converta suas planilhas em notação matemática profissional.
                 </p>
 
-                <button
-                    onClick={() => window.open('https://github.com/MD4NT4S/conversao-de-formula', '_blank')}
-                    className="inline-flex items-center gap-2 bg-white text-black px-6 py-2 rounded-full font-bold border-2 border-black shadow-[4px_4px_0px_0px_#191A23] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#191A23] transition-all"
-                >
-                    <span className="w-2 h-2 bg-[#B9FF66] rounded-full border border-black"></span>
-                    GitHub
-                </button>
-            </div>
+                <div className="flex justify-center pt-4">
+                    <button
+                        onClick={() => window.open('https://github.com/MD4NT4S/conversao-de-formula', '_blank')}
+                        className="group relative px-8 py-3 bg-black text-white font-bold rounded-full text-lg shadow-[8px_8px_0_0_#B9FF66] border-2 border-black hover:transform hover:-translate-y-1 hover:shadow-[10px_10px_0_0_#B9FF66] transition-all active:translate-y-1 active:shadow-none"
+                    >
+                        Ver Projeto no GitHub
+                    </button>
+                </div>
+            </header>
 
-            {/* Main Stack - Single Column */}
-            <div className="flex flex-col gap-12">
+            {/* Main Content Stack */}
+            <main className="flex flex-col gap-12">
 
-                {/* CARD 1: INPUT */}
-                <div className="bg-white border-2 border-black rounded-[30px] p-1 shadow-[8px_8px_0px_0px_#191A23] relative z-10 transition-transform hover:-translate-y-1">
-                    <div className="bg-[#F3F3F3] rounded-[24px] p-6 md:p-8 border border-black/10">
-                        {/* Label Badge */}
-                        <div className="absolute -top-5 left-1/2 transform -translate-x-1/2">
-                            <span className="bg-[#B9FF66] px-6 py-2 text-lg font-bold border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] rotate-1 inline-block">
-                                1. Cole a Fórmula
-                            </span>
+                {/* STEP 1: INPUT */}
+                <section className="bg-white border-[3px] border-black rounded-[2rem] p-8 md:p-12 shadow-[12px_12px_0_0_#000] relative group hover:shadow-[16px_16px_0_0_#000] transition-shadow duration-300">
+
+                    {/* Floating Badge */}
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-[#B9FF66] px-6 py-2 rounded-xl border-[3px] border-black shadow-[4px_4px_0_0_#000] rotate-2">
+                        <span className="text-xl font-bold uppercase tracking-wide text-black">1. Cole sua Fórmula</span>
+                    </div>
+
+                    <div className="mt-4 space-y-6">
+                        <div className="relative">
+                            <textarea
+                                value={formula}
+                                onChange={(e) => setFormula(e.target.value)}
+                                className="w-full h-48 bg-[#F8F9FA] border-[3px] border-gray-200 rounded-xl p-6 text-xl md:text-2xl font-mono text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-black focus:ring-4 focus:ring-[#B9FF66]/30 transition-all resize-none leading-relaxed"
+                                placeholder="=SQRT(A1^2 + B1^2)"
+                            />
+                            <div className="absolute bottom-4 right-4 pointer-events-none opacity-50">
+                                <Calculator className="w-8 h-8" />
+                            </div>
                         </div>
 
-                        <textarea
-                            value={formula}
-                            onChange={(e) => setFormula(e.target.value)}
-                            className="w-full h-32 bg-white border-2 border-black rounded-[16px] p-4 text-[#191A23] font-mono text-lg focus:outline-none focus:ring-4 focus:ring-[#B9FF66]/50 transition-all resize-none shadow-inner mt-4"
-                            placeholder="=SQRT(A1^2 + B1^2)"
-                        />
-
-                        {/* Variables Inline */}
+                        {/* Variables Detected Panel */}
                         {detectedVariables.length > 0 && (
-                            <div className="mt-6 p-4 bg-white border-2 border-black rounded-[16px] relative">
-                                <span className="absolute -top-3 left-4 bg-black text-white px-2 text-xs font-bold rounded">VARIÁVEIS</span>
-                                <div className="flex flex-wrap gap-3 mt-1">
+                            <div className="bg-[#F3F4F6] rounded-xl p-6 border-2 border-dashed border-gray-300">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <RefreshCw className="w-5 h-5" />
+                                    <h3 className="font-bold uppercase tracking-wider text-gray-500 text-sm">Variáveis Detectadas</h3>
+                                </div>
+
+                                <div className="flex flex-wrap gap-4">
                                     {detectedVariables.map((v) => (
-                                        <div key={v} className="flex items-center bg-[#F3F3F3] border border-black rounded-lg overflow-hidden shadow-sm">
-                                            <div className="px-3 py-2 bg-black text-white font-mono text-sm border-r border-black">
+                                        <div key={v} className="flex items-center bg-white border-2 border-black rounded-lg shadow-[4px_4px_0_0_rgba(0,0,0,0.1)] overflow-hidden hover:scale-105 transition-transform">
+                                            <div className="px-4 py-3 bg-black text-white font-mono font-bold text-lg">
                                                 {v}
                                             </div>
-                                            <input
-                                                type="text"
-                                                value={mappings[v] || ''}
-                                                onChange={(e) => handleMappingChange(v, e.target.value)}
-                                                className="w-24 px-3 py-2 bg-transparent outline-none font-bold text-center text-[#191A23] placeholder:font-normal"
-                                                placeholder="x"
-                                            />
+                                            <div className="px-1 bg-white">
+                                                <input
+                                                    type="text"
+                                                    value={mappings[v] || ''}
+                                                    onChange={(e) => handleMappingChange(v, e.target.value)}
+                                                    className="w-20 py-2 text-center text-xl font-bold text-black outline-none placeholder:text-gray-300"
+                                                    placeholder="x"
+                                                />
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         )}
                     </div>
-                </div>
+                </section>
 
-                {/* Arrow Divider */}
-                <div className="flex justify-center -my-6 z-0">
-                    <div className="bg-black text-[#B9FF66] p-3 rounded-full border-2 border-black shadow-[4px_4px_0px_0px_#B9FF66] z-20">
-                        <Calculator className="w-8 h-8" />
+                {/* Arrow Connector */}
+                <div className="flex justify-center -my-8 z-10">
+                    <div className="bg-black text-[#B9FF66] p-4 rounded-full border-[3px] border-black shadow-[6px_6px_0_0_#B9FF66]">
+                        <svg className="w-8 h-8 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
                     </div>
                 </div>
 
-                {/* CARD 2: OUTPUT */}
-                <div className="bg-[#191A23] border-2 border-black rounded-[30px] p-1 shadow-[8px_8px_0px_0px_#B9FF66]">
-                    <div className="bg-[#191A23] rounded-[24px] p-6 md:p-8 border border-white/10 relative overflow-hidden flex flex-col items-center text-center">
-                        {/* Label Badge */}
-                        <div className="absolute -top-5 left-1/2 transform -translate-x-1/2">
-                            <span className="bg-white text-black px-6 py-2 text-lg font-bold border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#B9FF66] -rotate-1 inline-block">
-                                2. Resultado
-                            </span>
-                        </div>
+                {/* STEP 2: RESULT */}
+                <section className="bg-[#191A23] text-white border-[3px] border-black rounded-[2rem] p-8 md:p-12 shadow-[12px_12px_0_0_#B9FF66] relative z-0 overflow-hidden">
+                    {/* Floating Badge */}
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-white px-6 py-2 rounded-xl border-[3px] border-black shadow-[4px_4px_0_0_#B9FF66] -rotate-1 z-20">
+                        <span className="text-xl font-bold uppercase tracking-wide text-black">2. Resultado</span>
+                    </div>
 
+                    <div className="mt-8 flex flex-col items-center">
                         <div
-                            className="w-full mt-6 bg-[#2C2D35] border-2 border-[#B9FF66] border-dashed rounded-[20px] p-8 min-h-[160px] flex items-center justify-center cursor-pointer hover:bg-[#2C2D35]/80 transition-all group relative"
+                            className="w-full bg-[#24252E] rounded-2xl p-8 md:p-12 min-h-[200px] flex items-center justify-center border-2 border-[#3F414D] hover:border-[#B9FF66] cursor-pointer transition-colors relative group"
                             onClick={copyToClipboard}
                         >
-                            <div id="latex-preview" className="text-2xl sm:text-4xl text-white select-all font-serif relative z-10 filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"></div>
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <p className="text-[#B9FF66] font-bold bg-black/80 px-4 py-1 rounded-full backdrop-blur-sm">Copiar</p>
+                            <div id="latex-preview" className="text-3xl md:text-5xl text-white font-serif tracking-wide z-10"></div>
+
+                            {/* Copy Overlay */}
+                            <div className="absolute inset-0 bg-[#191A23]/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm rounded-2xl">
+                                <span className="text-[#B9FF66] text-xl font-bold border-2 border-[#B9FF66] px-6 py-2 rounded-full shadow-[0_0_15px_rgba(185,255,102,0.5)]">
+                                    Clique para Copiar
+                                </span>
                             </div>
                         </div>
 
-                        <div className="mt-6 flex items-center gap-2 bg-black/40 px-4 py-2 rounded-lg border border-white/10">
-                            <Copy className="w-4 h-4 text-gray-500" />
-                            <code className="text-sm font-mono text-[#B9FF66] truncate max-w-xs">{latexOutput || '...'}</code>
+                        <div className="mt-8 w-full bg-black/40 rounded-lg p-4 border border-white/10 flex justify-between items-center gap-4">
+                            <code className="text-[#B9FF66] font-mono text-sm md:text-base break-all flex-1">
+                                {latexOutput || '\\text{Aguardando entrada...}'}
+                            </code>
+                            <button onClick={copyToClipboard} className="text-gray-400 hover:text-white transition-colors p-2">
+                                <Copy className="w-5 h-5" />
+                            </button>
                         </div>
                     </div>
-                </div>
+                </section>
+            </main>
 
-            </div>
+            <footer className="text-center text-gray-500 font-medium py-12">
+                <p>&copy; {new Date().getFullYear()} Excel to Algebra. Feito com matemática.</p>
+            </footer>
         </div>
     );
 };
