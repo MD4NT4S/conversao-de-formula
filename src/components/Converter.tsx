@@ -74,69 +74,63 @@ export const Converter: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col gap-12 w-full mx-auto max-w-6xl px-4 md:px-8">
+        <div className="flex flex-col gap-10 w-full max-w-3xl mx-auto px-4 py-8">
 
-            {/* Header / Hero Section - Positivus Style */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
-                <div className="space-y-4 max-w-2xl">
-                    <h1 className="text-5xl md:text-7xl font-bold text-[#191A23] leading-tight">
-                        Excel to <br />
-                        <span className="bg-[#B9FF66] px-2 rounded-lg inline-block transform -rotate-1">Algebra</span>
-                    </h1>
-                    <p className="text-[#191A23] text-lg md:text-xl font-normal max-w-lg">
-                        Transforme planilhas complexas em equações matemáticas elegantes. Simples, rápido e visual.
-                    </p>
-                </div>
+            {/* Header Centered */}
+            <div className="text-center space-y-6 flex flex-col items-center">
+                <h1 className="text-5xl md:text-7xl font-bold text-[#191A23] leading-tight tracking-tight">
+                    Excel to <br />
+                    <span className="bg-[#B9FF66] px-4 py-1 rounded-[10px] inline-block transform -rotate-2 border-2 border-black shadow-[4px_4px_0px_0px_#000]">Algebra</span>
+                </h1>
+                <p className="text-[#191A23] text-lg font-medium max-w-md mx-auto">
+                    Converta planilhas em matemática pura.
+                </p>
 
-                {/* CTA / Action Button Style */}
                 <button
                     onClick={() => window.open('https://github.com/MD4NT4S/conversao-de-formula', '_blank')}
-                    className="bg-[#191A23] text-white px-8 py-4 rounded-[14px] text-lg font-medium hover:bg-gray-800 transition-colors border border-black shadow-[5px_5px_0px_0px_#B9FF66] active:shadow-none active:translate-x-[5px] active:translate-y-[5px] transition-all"
+                    className="inline-flex items-center gap-2 bg-white text-black px-6 py-2 rounded-full font-bold border-2 border-black shadow-[4px_4px_0px_0px_#191A23] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#191A23] transition-all"
                 >
-                    Ver no GitHub
+                    <span className="w-2 h-2 bg-[#B9FF66] rounded-full border border-black"></span>
+                    GitHub
                 </button>
             </div>
 
-            {/* Main Grid: Neo-Brutalist Cards */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Main Stack - Single Column */}
+            <div className="flex flex-col gap-12">
 
-                {/* LEFT CARD: INPUT (Light Gray Theme) */}
-                <div className="bg-[#F3F3F3] border border-black rounded-[45px] p-8 md:p-10 shadow-[8px_8px_0px_0px_#191A23] flex flex-col gap-6 relative overflow-hidden">
-                    {/* Decorative Circle */}
-                    <div className="absolute top-[-20px] left-[-20px] w-20 h-20 bg-[#B9FF66] rounded-full blur-[40px] opacity-50" />
+                {/* CARD 1: INPUT */}
+                <div className="bg-white border-2 border-black rounded-[30px] p-1 shadow-[8px_8px_0px_0px_#191A23] relative z-10 transition-transform hover:-translate-y-1">
+                    <div className="bg-[#F3F3F3] rounded-[24px] p-6 md:p-8 border border-black/10">
+                        {/* Label Badge */}
+                        <div className="absolute -top-5 left-1/2 transform -translate-x-1/2">
+                            <span className="bg-[#B9FF66] px-6 py-2 text-lg font-bold border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] rotate-1 inline-block">
+                                1. Cole a Fórmula
+                            </span>
+                        </div>
 
-                    <div className="flex items-center gap-3">
-                        <span className="bg-[#B9FF66] px-2 py-1 text-xl font-bold border border-black rounded shadow-[2px_2px_0px_0px_#000]">Input</span>
-                        <h2 className="text-2xl font-bold">Fórmula Excel</h2>
-                    </div>
-
-                    <div className="space-y-4 flex-1">
                         <textarea
                             value={formula}
                             onChange={(e) => setFormula(e.target.value)}
-                            className="w-full h-48 bg-white border border-black rounded-[20px] p-6 text-[#191A23] font-mono text-lg focus:outline-none focus:ring-2 focus:ring-[#B9FF66] focus:border-black transition-all resize-none shadow-[4px_4px_0px_0px_#E0E0E0]"
-                            placeholder="Cole sua fórmula aqui...&#10;Ex: =SQRT(A1^2 + B1^2)"
+                            className="w-full h-32 bg-white border-2 border-black rounded-[16px] p-4 text-[#191A23] font-mono text-lg focus:outline-none focus:ring-4 focus:ring-[#B9FF66]/50 transition-all resize-none shadow-inner mt-4"
+                            placeholder="=SQRT(A1^2 + B1^2)"
                         />
 
-                        {/* Variables Section */}
+                        {/* Variables Inline */}
                         {detectedVariables.length > 0 && (
-                            <div className="mt-6 bg-white border border-black rounded-[20px] p-6 shadow-[4px_4px_0px_0px_#E0E0E0]">
-                                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                                    <RefreshCw className="w-5 h-5" /> Variáveis Detectadas
-                                </h3>
-                                <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="mt-6 p-4 bg-white border-2 border-black rounded-[16px] relative">
+                                <span className="absolute -top-3 left-4 bg-black text-white px-2 text-xs font-bold rounded">VARIÁVEIS</span>
+                                <div className="flex flex-wrap gap-3 mt-1">
                                     {detectedVariables.map((v) => (
-                                        <div key={v} className="flex items-center gap-3">
-                                            <div className="bg-[#191A23] text-white px-3 py-1 rounded-md font-mono text-sm border border-black">
+                                        <div key={v} className="flex items-center bg-[#F3F3F3] border border-black rounded-lg overflow-hidden shadow-sm">
+                                            <div className="px-3 py-2 bg-black text-white font-mono text-sm border-r border-black">
                                                 {v}
                                             </div>
-                                            <span className="text-gray-400">→</span>
                                             <input
                                                 type="text"
                                                 value={mappings[v] || ''}
                                                 onChange={(e) => handleMappingChange(v, e.target.value)}
-                                                className="flex-1 bg-[#F3F3F3] border-b-2 border-gray-300 focus:border-[#B9FF66] outline-none px-2 py-1 transition-colors font-medium"
-                                                placeholder="Símbolo (Ex: x)"
+                                                className="w-24 px-3 py-2 bg-transparent outline-none font-bold text-center text-[#191A23] placeholder:font-normal"
+                                                placeholder="x"
                                             />
                                         </div>
                                     ))}
@@ -146,58 +140,40 @@ export const Converter: React.FC = () => {
                     </div>
                 </div>
 
-                {/* RIGHT CARD: OUTPUT (Dark Theme) */}
-                <div className="bg-[#191A23] border border-black rounded-[45px] p-8 md:p-10 shadow-[8px_8px_0px_0px_#191A23] flex flex-col gap-6 text-white relative">
-                    {/* Decorative Elements */}
-                    <div className="absolute top-10 right-10">
-                        <Calculator className="w-12 h-12 text-[#B9FF66] opacity-20 transform rotate-12" />
+                {/* Arrow Divider */}
+                <div className="flex justify-center -my-6 z-0">
+                    <div className="bg-black text-[#B9FF66] p-3 rounded-full border-2 border-black shadow-[4px_4px_0px_0px_#B9FF66] z-20">
+                        <Calculator className="w-8 h-8" />
                     </div>
+                </div>
 
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <span className="bg-white text-black px-2 py-1 text-xl font-bold border border-black rounded shadow-[2px_2px_0px_0px_#B9FF66]">Output</span>
-                            <h2 className="text-2xl font-bold text-[#B9FF66]">Resultado</h2>
+                {/* CARD 2: OUTPUT */}
+                <div className="bg-[#191A23] border-2 border-black rounded-[30px] p-1 shadow-[8px_8px_0px_0px_#B9FF66]">
+                    <div className="bg-[#191A23] rounded-[24px] p-6 md:p-8 border border-white/10 relative overflow-hidden flex flex-col items-center text-center">
+                        {/* Label Badge */}
+                        <div className="absolute -top-5 left-1/2 transform -translate-x-1/2">
+                            <span className="bg-white text-black px-6 py-2 text-lg font-bold border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#B9FF66] -rotate-1 inline-block">
+                                2. Resultado
+                            </span>
                         </div>
-                        <button
+
+                        <div
+                            className="w-full mt-6 bg-[#2C2D35] border-2 border-[#B9FF66] border-dashed rounded-[20px] p-8 min-h-[160px] flex items-center justify-center cursor-pointer hover:bg-[#2C2D35]/80 transition-all group relative"
                             onClick={copyToClipboard}
-                            className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 hover:bg-white/10 transition-colors text-sm font-medium"
                         >
-                            <Copy className="w-4 h-4" /> Copiar
-                        </button>
-                    </div>
-
-                    {/* Preview Area - "Terminal" Style */}
-                    <div
-                        className="flex-1 bg-[#2C2D35] border border-gray-700 rounded-[30px] p-8 flex items-center justify-center min-h-[300px] relative cursor-pointer hover:border-[#B9FF66] transition-colors group"
-                        onClick={copyToClipboard}
-                    >
-                        <div id="latex-preview" className="text-2xl sm:text-4xl text-white select-all font-serif z-10"></div>
-
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-10 transition-opacity">
-                            <div className="bg-[#B9FF66] text-black px-4 py-2 rounded-full font-bold text-sm shadow-lg pointer-events-none transform translate-y-12 group-hover:translate-y-0 transition-transform">
-                                Clique para Copiar
+                            <div id="latex-preview" className="text-2xl sm:text-4xl text-white select-all font-serif relative z-10 filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"></div>
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <p className="text-[#B9FF66] font-bold bg-black/80 px-4 py-1 rounded-full backdrop-blur-sm">Copiar</p>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Code Snippet */}
-                    <div className="bg-black/30 rounded-xl p-4 border border-white/10">
-                        <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">Código LaTeX</p>
-                        <code className="text-sm font-mono text-[#B9FF66] break-all">
-                            {latexOutput || '...'}
-                        </code>
+                        <div className="mt-6 flex items-center gap-2 bg-black/40 px-4 py-2 rounded-lg border border-white/10">
+                            <Copy className="w-4 h-4 text-gray-500" />
+                            <code className="text-sm font-mono text-[#B9FF66] truncate max-w-xs">{latexOutput || '...'}</code>
+                        </div>
                     </div>
                 </div>
 
-            </div>
-
-            {/* Footer Style */}
-            <div className="mt-12 flex justify-between items-center border-t-2 border-black pt-8">
-                <div className="flex gap-4">
-                    {['Amazon', 'Dribbble', 'HubSpot', 'Notion', 'Netflix', 'Zoom'].map((brand) => (
-                        <span key={brand} className="text-gray-400 font-bold text-lg grayscale hover:grayscale-0 transition-all cursor-default">{brand}</span>
-                    ))}
-                </div>
             </div>
         </div>
     );
