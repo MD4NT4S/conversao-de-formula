@@ -174,14 +174,7 @@ export const Converter: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="mt-6 flex items-center gap-4 bg-[#222] p-4 rounded-xl border border-white/10">
-                        <code className="text-[#B9FF66] font-mono break-all flex-1 text-sm">
-                            {latexOutput || '...'}
-                        </code>
-                        <button onClick={copyToClipboard} className="text-white hover:text-[#B9FF66]">
-                            <Copy className="w-6 h-6" />
-                        </button>
-                    </div>
+
                 </section>
             </main>
 
