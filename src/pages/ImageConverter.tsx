@@ -14,28 +14,60 @@ const ImageConverter: React.FC = () => {
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.onload = () => {
+                const scaleFactor = 2.5; // Upscale for better OCR
                 const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
+                canvas.width = img.width * scaleFactor;
+                canvas.height = img.height * scaleFactor;
                 const ctx = canvas.getContext('2d');
                 if (!ctx) {
                     resolve(URL.createObjectURL(file));
                     return;
                 }
 
-                ctx.drawImage(img, 0, 0);
+                // Quality settings
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const data = imageData.data;
 
-                // Simple binarization (thresholding)
-                // Helps remove noise and makes text clearer for Tesseract
+                let totalBrightness = 0;
                 for (let i = 0; i < data.length; i += 4) {
-                    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-                    const threshold = 128;
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    totalBrightness += (r + g + b) / 3;
+                }
+                const avgBrightness = totalBrightness / (data.length / 4);
+                const isDark = avgBrightness < 128; // Detect dark mode image
+
+                for (let i = 0; i < data.length; i += 4) {
+                    let r = data[i];
+                    let g = data[i + 1];
+                    let b = data[i + 2];
+
+                    if (isDark) {
+                        // Invert colors if dark image (Tesseract prefers black text on white)
+                        r = 255 - r;
+                        g = 255 - g;
+                        b = 255 - b;
+                    }
+
+                    // Increase Contrast
+                    const contrast = 1.5; // Factor
+                    const intercept = 128 * (1 - contrast);
+                    r = r * contrast + intercept;
+                    g = g * contrast + intercept;
+                    b = b * contrast + intercept;
+
+                    // Grayscale & Binarize
+                    const avg = (r + g + b) / 3;
+                    const threshold = 160; // Slightly higher threshold for cleaner text
                     const color = avg > threshold ? 255 : 0;
-                    data[i] = color;     // R
-                    data[i + 1] = color; // G
-                    data[i + 2] = color; // B
+
+                    data[i] = color;
+                    data[i + 1] = color;
+                    data[i + 2] = color;
                 }
 
                 ctx.putImageData(imageData, 0, 0);
@@ -55,27 +87,32 @@ const ImageConverter: React.FC = () => {
             const processedImage = await preprocessImage(file);
 
             const worker = await createWorker('eng');
+
+            // Experiment with different PSM modes if needed (single block vs single line)
+            // For now default is usually auto.
             const ret = await worker.recognize(processedImage);
             await worker.terminate();
 
             let text = ret.data.text;
 
-            // Improve post-processing
-            text = text.replace(/\n/g, ' \\\\ ');
-            text = text.replace(/\|/g, '1'); // Common OCR error: | for 1
-            text = text.replace(/l/g, '1'); // Common OCR error: l for 1
-            text = text.replace(/O/g, '0'); // Common OCR error: O for 0 (context dependent, risky but useful for math)
+            // Heuristics for cleanup
+            text = text.replace(/\n\s*\n/g, '\\\\ '); // Double newline to LaTeX break
+            text = text.replace(/\n/g, ' ');         // Single newline to space
 
-            // Math symbols
-            text = text.replace(/=/g, ' = ');
-            text = text.replace(/\+/g, ' + ');
-            text = text.replace(/-/g, ' - ');
-            text = text.replace(/x/g, ' x '); // Multiplication often read as x
+            // Fix common OCR mis-recognitions for math
+            text = text.replace(/\|/g, 'I');         // Vertical bar probably I or 1
+            text = text.replace(/l/g, 'l');          // Lowercase l
+
+            // Naive fraction detection (looks for horizontal lines text blocks - extremely hard with plain OCR)
+            // Instead, let's just ensure basic symbols are spaced
+
+            text = text.replace(/([=+\-*/])/g, ' $1 '); // Space operators
+            text = text.replace(/\s+/g, ' ').trim();    // Clean spaces
 
             setResult(text);
         } catch (err) {
             console.error(err);
-            setResult('Error processing image. Please try another one.');
+            setResult('Error processing image. Post-processing failed.');
         } finally {
             setIsProcessing(false);
         }
