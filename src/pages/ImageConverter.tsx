@@ -9,26 +9,68 @@ const ImageConverter: React.FC = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [result, setResult] = useState<string | null>(null);
 
+
+    const preprocessImage = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    resolve(URL.createObjectURL(file));
+                    return;
+                }
+
+                ctx.drawImage(img, 0, 0);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+
+                // Simple binarization (thresholding)
+                // Helps remove noise and makes text clearer for Tesseract
+                for (let i = 0; i < data.length; i += 4) {
+                    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                    const threshold = 128;
+                    const color = avg > threshold ? 255 : 0;
+                    data[i] = color;     // R
+                    data[i + 1] = color; // G
+                    data[i + 2] = color; // B
+                }
+
+                ctx.putImageData(imageData, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+            };
+            img.onerror = reject;
+            img.src = URL.createObjectURL(file);
+        });
+    };
+
     const handleConvert = async () => {
         if (!file) return;
 
         setIsProcessing(true);
-        setResult(null); // Clear previous result
+        setResult(null);
         try {
+            const processedImage = await preprocessImage(file);
+
             const worker = await createWorker('eng');
-            const ret = await worker.recognize(file);
+            const ret = await worker.recognize(processedImage);
             await worker.terminate();
 
-            // Basic heuristic: convert common OCR artifacts to LaTeX
             let text = ret.data.text;
 
-            // Replace newlines with equivalent
+            // Improve post-processing
             text = text.replace(/\n/g, ' \\\\ ');
+            text = text.replace(/\|/g, '1'); // Common OCR error: | for 1
+            text = text.replace(/l/g, '1'); // Common OCR error: l for 1
+            text = text.replace(/O/g, '0'); // Common OCR error: O for 0 (context dependent, risky but useful for math)
 
-            // Try to detect common math symbols
+            // Math symbols
             text = text.replace(/=/g, ' = ');
             text = text.replace(/\+/g, ' + ');
             text = text.replace(/-/g, ' - ');
+            text = text.replace(/x/g, ' x '); // Multiplication often read as x
 
             setResult(text);
         } catch (err) {
