@@ -6,7 +6,7 @@ import './App.css';
 
 function App() {
   return (
-    <Router>
+    <Router basename="/conversao-de-formula">
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/excel-to-latex" element={<ExcelConverter />} />
