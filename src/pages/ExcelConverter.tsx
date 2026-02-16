@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FileSpreadsheet, Copy, Check } from 'lucide-react';
 import Layout from '../components/Layout';
+import { parseExcelFormula } from '../utils/excelParser';
 
 const ExcelConverter: React.FC = () => {
     const [input, setInput] = useState('');
@@ -8,9 +9,9 @@ const ExcelConverter: React.FC = () => {
     const [copied, setCopied] = useState(false);
 
     const handleConvert = () => {
-        // Mock conversion for UI demo
         if (!input) return;
-        setOutput(`\\begin{equation} ${input} \\end{equation}`);
+        const latex = parseExcelFormula(input);
+        setOutput(`\\begin{equation} ${latex} \\end{equation}`);
     };
 
     const handleCopy = () => {

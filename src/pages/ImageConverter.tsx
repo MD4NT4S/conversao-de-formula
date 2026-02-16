@@ -1,10 +1,43 @@
 import React, { useState } from 'react';
 import { Image as ImageIcon, Upload, X } from 'lucide-react';
+import { createWorker } from 'tesseract.js';
 import Layout from '../components/Layout';
 
 const ImageConverter: React.FC = () => {
     const [dragActive, setDragActive] = useState(false);
     const [file, setFile] = useState<File | null>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [result, setResult] = useState<string | null>(null);
+
+    const handleConvert = async () => {
+        if (!file) return;
+
+        setIsProcessing(true);
+        setResult(null); // Clear previous result
+        try {
+            const worker = await createWorker('eng');
+            const ret = await worker.recognize(file);
+            await worker.terminate();
+
+            // Basic heuristic: convert common OCR artifacts to LaTeX
+            let text = ret.data.text;
+
+            // Replace newlines with equivalent
+            text = text.replace(/\n/g, ' \\\\ ');
+
+            // Try to detect common math symbols
+            text = text.replace(/=/g, ' = ');
+            text = text.replace(/\+/g, ' + ');
+            text = text.replace(/-/g, ' - ');
+
+            setResult(text);
+        } catch (err) {
+            console.error(err);
+            setResult('Error processing image. Please try another one.');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
 
     const handleDrag = (e: React.DragEvent) => {
         e.preventDefault();
@@ -22,6 +55,7 @@ const ImageConverter: React.FC = () => {
         setDragActive(false);
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
             setFile(e.dataTransfer.files[0]);
+            setResult(null); // Clear result on new file drop
         }
     };
 
@@ -29,6 +63,7 @@ const ImageConverter: React.FC = () => {
         e.preventDefault();
         if (e.target.files && e.target.files[0]) {
             setFile(e.target.files[0]);
+            setResult(null); // Clear result on new file selection
         }
     };
 
@@ -60,14 +95,18 @@ const ImageConverter: React.FC = () => {
                             <div className="flex items-center gap-4">
                                 <span className="text-sm text-neutral-400">{file.name}</span>
                                 <button
-                                    onClick={() => setFile(null)}
+                                    onClick={() => { setFile(null); setResult(null); }}
                                     className="p-1 hover:bg-red-500/20 hover:text-red-500 rounded-full transition-colors text-neutral-500"
                                 >
                                     <X size={20} />
                                 </button>
                             </div>
-                            <button className="mt-6 px-8 py-3 bg-primary hover:bg-blue-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-primary/20">
-                                Convert Image
+                            <button
+                                onClick={handleConvert}
+                                disabled={isProcessing}
+                                className="mt-6 px-8 py-3 bg-primary hover:bg-blue-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                                {isProcessing ? 'Processing... (may take seconds)' : 'Convert Image'}
                             </button>
                         </div>
                     ) : (
@@ -93,6 +132,23 @@ const ImageConverter: React.FC = () => {
                         </>
                     )}
                 </div>
+
+                {result && (
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-semibold text-neutral-300">LaTeX Output (Beta)</h3>
+                            <button
+                                onClick={() => navigator.clipboard.writeText(result)}
+                                className="text-sm text-primary hover:underline"
+                            >
+                                Copy
+                            </button>
+                        </div>
+                        <div className="bg-neutral-950 rounded-xl p-4 font-mono text-sm text-emerald-400 overflow-x-auto whitespace-pre-wrap">
+                            {result}
+                        </div>
+                    </div>
+                )}
 
                 {/* Recent Section - specific to Image tool */}
                 <div className="grid md:grid-cols-3 gap-6 pt-12 border-t border-neutral-900">
